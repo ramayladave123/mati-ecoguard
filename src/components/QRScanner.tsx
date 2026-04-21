@@ -92,7 +92,16 @@ export const QRScanner = ({ onResult, onClose }: Props) => {
       </div>
       <div id={elementId} className="aspect-square w-full bg-black [&_video]:rounded-none" />
       {!error && (
-        <div className="pointer-events-none absolute inset-x-8 top-[42%] h-56 -translate-y-1/2 rounded-2xl border-2 border-primary-glow/80 shadow-[0_0_40px_hsl(var(--primary-glow)/0.6)] animate-pulse" />
+        <div className="pointer-events-none absolute inset-x-8 top-[42%] h-56 -translate-y-1/2">
+          <div className="absolute inset-0 rounded-2xl border-2 border-primary-glow/70 shadow-[0_0_40px_hsl(var(--primary-glow)/0.6)]" />
+          <span className="absolute -left-1 -top-1 h-6 w-6 rounded-tl-2xl border-l-4 border-t-4 border-primary-glow animate-corner-pulse" />
+          <span className="absolute -right-1 -top-1 h-6 w-6 rounded-tr-2xl border-r-4 border-t-4 border-primary-glow animate-corner-pulse" />
+          <span className="absolute -bottom-1 -left-1 h-6 w-6 rounded-bl-2xl border-b-4 border-l-4 border-primary-glow animate-corner-pulse" />
+          <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-br-2xl border-b-4 border-r-4 border-primary-glow animate-corner-pulse" />
+          <div className="absolute inset-x-3 top-0 h-full overflow-hidden rounded-xl">
+            <div className="h-1 w-full animate-scan-line bg-gradient-to-r from-transparent via-primary-glow to-transparent shadow-[0_0_18px_hsl(var(--primary-glow))]" />
+          </div>
+        </div>
       )}
       {error && (
         <div className="space-y-3 bg-destructive/20 p-4 text-sm text-primary-foreground">

@@ -14,16 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      beaches: {
+        Row: {
+          capacity: number
+          created_at: string
+          current_count: number
+          description: string | null
+          id: string
+          image_url: string | null
+          latitude: number | null
+          location: string | null
+          longitude: number | null
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          current_count?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          current_count?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      checkins: {
+        Row: {
+          beach_id: string
+          block_number: number
+          carbon_grams: number
+          created_at: string
+          id: string
+          payload_hash: string
+          prev_hash: string
+          tx_hash: string
+          visitor_handle: string
+        }
+        Insert: {
+          beach_id: string
+          block_number: number
+          carbon_grams?: number
+          created_at?: string
+          id?: string
+          payload_hash: string
+          prev_hash: string
+          tx_hash: string
+          visitor_handle: string
+        }
+        Update: {
+          beach_id?: string
+          block_number?: number
+          carbon_grams?: number
+          created_at?: string
+          id?: string
+          payload_hash?: string
+          prev_hash?: string
+          tx_hash?: string
+          visitor_handle?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkins_beach_id_fkey"
+            columns: ["beach_id"]
+            isOneToOne: false
+            referencedRelation: "beaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      perform_checkin: {
+        Args: { _beach_slug: string; _visitor_handle: string }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +272,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff"],
+    },
   },
 } as const

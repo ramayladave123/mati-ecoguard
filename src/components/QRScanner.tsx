@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Camera, X } from "lucide-react";
+import { Camera, X, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   onResult: (text: string) => void;
@@ -11,28 +12,71 @@ interface Props {
 export const QRScanner = ({ onResult, onClose }: Props) => {
   const elementId = "ecolog-qr-reader";
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const runningRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [manual, setManual] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     const scanner = new Html5Qrcode(elementId, { verbose: false });
     scannerRef.current = scanner;
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
-        (text) => {
-          onResult(text);
-          scanner.stop().catch(() => {});
-        },
-        () => {}
-      )
-      .catch((e) => setError(e?.message || "Camera unavailable"));
+
+    const start = async () => {
+      try {
+        // Check camera support upfront for clearer error messaging
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera API not supported in this browser");
+        }
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (text) => {
+            if (cancelled) return;
+            onResult(text);
+            scanner.stop().then(() => {
+              runningRef.current = false;
+            }).catch(() => {});
+          },
+          () => {}
+        );
+        runningRef.current = true;
+      } catch (e: any) {
+        if (!cancelled) {
+          const msg = e?.message || String(e);
+          if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
+            setError("Camera permission denied. Allow camera access in your browser, or paste the QR link below.");
+          } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("no camera")) {
+            setError("No camera detected on this device. Paste the QR link below instead.");
+          } else {
+            setError("Camera unavailable in this preview (iframe restriction). Open the app in a new tab, or paste the QR link below.");
+          }
+        }
+      }
+    };
+    start();
+
     return () => {
-      scanner.stop().catch(() => {});
-      scanner.clear();
+      cancelled = true;
+      const cleanup = async () => {
+        try {
+          if (runningRef.current) {
+            await scanner.stop();
+            runningRef.current = false;
+          }
+        } catch {}
+        try {
+          scanner.clear();
+        } catch {}
+      };
+      cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const submitManual = () => {
+    const v = manual.trim();
+    if (v) onResult(v);
+  };
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-foreground/95 shadow-deep">
@@ -47,10 +91,25 @@ export const QRScanner = ({ onResult, onClose }: Props) => {
         )}
       </div>
       <div id={elementId} className="aspect-square w-full bg-black [&_video]:rounded-none" />
-      <div className="pointer-events-none absolute inset-x-8 top-1/2 h-56 -translate-y-1/2 rounded-2xl border-2 border-primary-glow/80 shadow-[0_0_40px_hsl(var(--primary-glow)/0.6)] animate-pulse" />
+      {!error && (
+        <div className="pointer-events-none absolute inset-x-8 top-[42%] h-56 -translate-y-1/2 rounded-2xl border-2 border-primary-glow/80 shadow-[0_0_40px_hsl(var(--primary-glow)/0.6)] animate-pulse" />
+      )}
       {error && (
-        <div className="bg-destructive/20 p-3 text-center text-sm text-destructive-foreground">
-          {error}. Pick a site below instead.
+        <div className="space-y-3 bg-destructive/20 p-4 text-sm text-primary-foreground">
+          <p className="text-center">{error}</p>
+          <div className="flex items-center gap-2 rounded-xl bg-background/10 p-2">
+            <Keyboard className="ml-1 h-4 w-4 shrink-0 opacity-80" />
+            <Input
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              placeholder="Paste QR link or site slug"
+              className="border-0 bg-transparent text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-0"
+              onKeyDown={(e) => e.key === "Enter" && submitManual()}
+            />
+            <Button size="sm" onClick={submitManual} disabled={!manual.trim()}>
+              Go
+            </Button>
+          </div>
         </div>
       )}
     </div>
